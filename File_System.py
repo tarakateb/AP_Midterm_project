@@ -25,6 +25,8 @@ class File:
     def rename(self, new_name):
         self.name = new_name
 
+    def nwfiletxt(self, new_content):
+        self.contents = new_content
 
 class Folder:
     def __init__(self,folder_name,path):
@@ -223,7 +225,8 @@ class Unix:
         source_parent_dir = self.walk_through_a_path(source_parent_path)
         file_obj = source_parent_dir.get_child(source_file_name)
 
-        copied_file = File(file_obj.name,destination)
+        copied_file = File(file_obj.name, f"{destination_parent_path}/{file_obj.name}")
+
         copied_file.contents = file_obj.contents.copy() #for actually coping the content with no links to the source object
 
         destination_parent = self.walk_through_a_path(destination_parent_path)
@@ -289,6 +292,13 @@ class Unix:
             parent.children[new_name] = file
         else:
             raise Exception(f'{path} is a directory')
+
+    def nwfiletxt(self, path, new_content):
+        file = self.walk_through_a_path(path)
+        if isinstance(file, File):
+            file.nwfiletxt(new_content)
+        else:
+            raise Exception(f"{path} is a directory")
 
     def cat(self, path):
         file = self.walk_through_a_path(path)
@@ -383,6 +393,14 @@ def Unix_terminal():
                     new_name = parts[2]
                     unix.rename(file_path, new_name)
 
+            elif command == 'rename_folder':
+                if len(parts) < 3:
+                    print("rename_folder: usage: rename-folder <folder_path> <new_name>")
+                else:
+                    folder_path = parts[1]
+                    new_name = parts[2]
+                    unix.rename_folder(folder_path, new_name)
+
             elif command == 'append':
                 if len(parts) < 2:
                     print("append: usage: append <file_path>")
@@ -414,6 +432,20 @@ def Unix_terminal():
                     print("cp_folder: usage: cp_folder <source_path> <destination_path>")
                 else:
                     unix.cp_folder(parts[1], parts[2])
+
+            elif command == 'nwfiletxt':
+                if len(parts) < 2:
+                    print("nwfiletxt: usage: nwfiletxt <file_path>")
+                else:
+                    file_path = parts[1]
+                    print("Enter content to append. Finish with END//")
+                    lines = []
+                    while (True):
+                        line = input()
+                        if line.strip() == "END//":
+                            break
+                        lines.append(line)
+                    unix.nwfiletxt(file_path, '\n'.join(lines) + '\n')
 
             elif command == 'relative_path':
                 if len(parts) < 3:
