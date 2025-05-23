@@ -1,1 +1,1 @@
-#Unix mock terminal simulation program.  
+Unix mock terminal simulation program.  
