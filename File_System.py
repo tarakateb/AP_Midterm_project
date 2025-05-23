@@ -101,7 +101,7 @@ class Unix:
                     raise Exception(f"{part}: No such file or directory!")
         return current
 
-    def reverse_forward_walk(self, path):
+    def reverse_forward_walk(self, path): #included in case path formats are not given in correct order (from parent to child)
         if path.startswith('/'):
             return unix.walk_through_a_path(path)
 
@@ -397,6 +397,7 @@ def Unix_terminal():
             print(f"Error: {e}")
 
 unix = Unix()
+Unix_terminal()
 
 # unix.mkdir('//Documents')
 # unix.mkdir('//Documents/photos')
