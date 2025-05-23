@@ -376,6 +376,13 @@ def Unix_terminal():
                     print("cp: usage: cp <source_path> <destination_path>")
                 else:
                     unix.cp_file(parts[1], parts[2])
+
+            elif command == 'cp_folder':
+                if len(parts) < 3:
+                    print("cp_folder: usage: cp_folder <source_path> <destination_path>")
+                else:
+                    unix.cp_folder(parts[1], parts[2])
+                    
             elif command == 'relative_path':
                 if len(parts) < 3:
                     print("relative_path: usage: relative_path <path_obj1> <path_obj2")
