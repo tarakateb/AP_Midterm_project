@@ -1,4 +1,3 @@
-
 class File:
     def __init__(self, filename, path):
         self.name = filename
@@ -26,6 +25,7 @@ class File:
     def rename(self, new_name):
         self.name = new_name
 
+
 class Folder:
     def __init__(self,folder_name,path):
         self.name = folder_name
@@ -34,8 +34,20 @@ class Folder:
 
     def rename_folder(self, name):
         self.name = name
+        Folder.update_children_paths(self)
+
+    @staticmethod
+    def update_children_paths(folder):
+        parts = folder.path.split('/')
+        folder.path = '/' + '/'.join(parts[:-1] + [folder.name])
+        for child in folder.all_children():
+            child.path = f'{folder.path}/{child.name}'
+            if isinstance(child, Folder):
+                Folder.update_children_paths(child)
 
     def add_child(self, child):
+        if child.name in self.children:
+            raise Exception(f'{child.name} already exists in {self.name}')
         self.children[child.name] = child
 
     def remove_child(self, name):
@@ -101,7 +113,7 @@ class Unix:
                     raise Exception(f"{part}: No such file or directory!")
         return current
 
-    def reverse_forward_walk(self, path): #included in case path formats are not given in correct order (from parent to child)
+    def reverse_forward_walk(self, path):
         if path.startswith('/'):
             return unix.walk_through_a_path(path)
 
@@ -135,10 +147,16 @@ class Unix:
         directory = self.walk_through_a_path(path)
         return directory.list_children()
 
-    def rename_folder(self, path , name):
-        folder1 = self.walk_through_a_path(path)
-        if isinstance(folder1, Folder):
-            folder1.rename_folder(name)
+    def rename_folder(self, path, name):
+        folder = self.walk_through_a_path(path)
+        if isinstance(folder, Folder):
+            parent = self.get_parent(folder)
+            if parent :
+                del parent.children[folder.name]
+                folder.rename_folder(name)
+                parent.children[folder.name] = folder
+            else:
+                folder.rename_folder(name)
         else:
             raise Exception(f"{path} is a File!")
 
@@ -146,8 +164,8 @@ class Unix:
         source_parts = source.split('/')
         destination_parts = destination.split('/')
 
-        parent_of_source_path = '/'.join(source_parts[:-1])
-        parent_of_destination_path = '/'.join(destination_parts[:-1])
+        parent_of_source_path = '/'.join(source_parts[:-1]) or '/'
+        parent_of_destination_path = '/'.join(destination_parts[:-1]) or '/'
 
         obj = self.walk_through_a_path(source)
         obj.path = destination
@@ -155,6 +173,15 @@ class Unix:
         parent_of_source.remove_child(source_parts[-1])
         parent_of_destination = self.walk_through_a_path(parent_of_destination_path)
         parent_of_destination.add_child(obj)
+        if isinstance(obj, Folder):
+            self.update_paths(obj, destination)
+
+    def update_paths(self, folder, current_path):
+        folder.path = current_path
+        for child in folder.all_children():
+            child.path = f'{current_path}/{child.name}'
+            if isinstance(child, Folder):
+                self.update_paths(child, child.path)
 
     def cp_folder(self, source, destination):
         source_parts = source.split('/')
@@ -168,7 +195,7 @@ class Unix:
         obj_to_copy = parent_of_source.get_child(source_folder_name)
         destination_parent = self.walk_through_a_path(destination_parent_path)
 
-        copied_folder = self.copying_folder(obj_to_copy, destination)
+        copied_folder = self.copying_folder(obj_to_copy, f'{destination}/{obj_to_copy.name}')
         destination_parent.add_child(copied_folder)
 
     def copying_folder(self, obj , path):
@@ -254,9 +281,14 @@ class Unix:
     def rename(self, path, new_name):
         file = self.walk_through_a_path(path)
         if isinstance(file, File):
+            old_name = file.name
             file.rename(new_name)
+            parent = self.walk_through_a_path('/' + '/'.join(file.path.split('/')[:-1]))
+            del parent.children[old_name]
+            file.path = f"{parent.path}/{new_name}"
+            parent.children[new_name] = file
         else:
-            raise Exception(f"{path} is a directory")
+            raise Exception(f'{path} is a directory')
 
     def cat(self, path):
         file = self.walk_through_a_path(path)
@@ -382,14 +414,14 @@ def Unix_terminal():
                     print("cp_folder: usage: cp_folder <source_path> <destination_path>")
                 else:
                     unix.cp_folder(parts[1], parts[2])
-                    
+
             elif command == 'relative_path':
                 if len(parts) < 3:
                     print("relative_path: usage: relative_path <path_obj1> <path_obj2")
                 else:
                     obj1 = unix.walk_through_a_path(parts[1])
                     obj2 = unix.walk_through_a_path(parts[2])
-                    Unix.get_relative_path(obj1 , obj2)
+                    Unix.get_relative_path(obj1, obj2)
             else:
                 print(f"{command} :command not found")
 
@@ -398,7 +430,6 @@ def Unix_terminal():
 
 unix = Unix()
 Unix_terminal()
-
 # unix.mkdir('//Documents')
 # unix.mkdir('//Documents/photos')
 # unix.mkdir('//Downloads')
