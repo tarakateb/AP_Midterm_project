@@ -26,7 +26,7 @@ class File:
         self.name = new_name
 
     def nwfiletxt(self, new_content):
-        self.contents = new_content
+        self.contents = new_content.splitlines(keepends=True)
 
 class Folder:
     def __init__(self,folder_name,path):
@@ -101,8 +101,8 @@ class Unix:
             parts = path.split('/') # paths' parts are separated by /
             current = self.root_folder
         else:
-            parts = path.split('/') #relative_path
-            current = self.current_folder #if cd was not used anywhere before, this is the same as root folder
+            parts = path.split('/') # relative_path
+            current = self.current_folder # if cd was not used anywhere before, this is the same as root folder
         for part in parts:
             if part == '' or part == '.':
                 continue
@@ -166,11 +166,13 @@ class Unix:
         source_parts = source.split('/')
         destination_parts = destination.split('/')
 
-        parent_of_source_path = '/'.join(source_parts[:-1]) or '/'
-        parent_of_destination_path = '/'.join(destination_parts[:-1]) or '/'
+        parent_of_source_path = '/'.join(source_parts[:-1]) or self.current_folder.path
+        parent_of_destination_path = '/'.join(destination_parts[:-1]) or self.current_folder.path
 
         obj = self.walk_through_a_path(source)
-        obj.path = destination
+        obj.name = destination_parts[-1]
+        obj.path = f"{parent_of_destination_path}/{obj.name}"
+
         parent_of_source = self.walk_through_a_path(parent_of_source_path)
         parent_of_source.remove_child(source_parts[-1])
         parent_of_destination = self.walk_through_a_path(parent_of_destination_path)
@@ -190,8 +192,8 @@ class Unix:
         destination_parts = destination.split('/')
 
         source_folder_name = source_parts[-1]
-        source_parent_path = '/' + '/'.join(source_parts[:-1]) if len(source_parts) > 1 else '/'
-        destination_parent_path = '/' + '/'.join(destination_parts[:-1]) if len(destination_parts) > 1 else '/'
+        source_parent_path = '/' + '/'.join(source_parts[:-1]) if len(source_parts) > 1 else self.current_folder.path
+        destination_parent_path = '/' + '/'.join(destination_parts[:-1]) if len(destination_parts) > 1 else self.current_folder.path
 
         parent_of_source = self.walk_through_a_path(source_parent_path)
         obj_to_copy = parent_of_source.get_child(source_folder_name)
@@ -220,7 +222,7 @@ class Unix:
 
         source_file_name = source_parts[-1]
         source_parent_path = '/'.join(source_parts[:-1])
-        destination_parent_path = '/'.join(destination_parts[:-1])
+        destination_parent_path = '/'.join(destination_parts[:-1]) or self.current_folder
 
         source_parent_dir = self.walk_through_a_path(source_parent_path)
         file_obj = source_parent_dir.get_child(source_file_name)
@@ -235,7 +237,7 @@ class Unix:
     def touch(self, path):
         parts = path.split('/')
         file_name = parts[-1]
-        parent_path = '/'.join(parts[:-1]) or '/'
+        parent_path = '/'.join(parts[:-1]) or self.current_folder.path
         parent_folder = self.walk_through_a_path(parent_path)
         new_file = File(file_name, path)
         parent_folder.add_child(new_file)
@@ -243,7 +245,7 @@ class Unix:
     def mkdir(self, path):
         parts = path.split('/')
         dir_name = parts[-1]
-        parent_path = '/'.join(parts[:-1]) or '/'
+        parent_path = '/'.join(parts[:-1]) or self.current_folder.path
 
         parent_dir = self.walk_through_a_path(parent_path)
         new_directory = Folder(dir_name,path)
@@ -252,7 +254,7 @@ class Unix:
     def rm(self, path):
         parts = path.split('/')
         file_name = parts[-1]
-        parent_path = '/'.join(parts[:-1]) or '/'
+        parent_path = '/'.join(parts[:-1]) or self.current_folder.path
 
         parent_dir = self.walk_through_a_path(parent_path)
         parent_dir.remove_child(file_name)
@@ -461,7 +463,7 @@ def Unix_terminal():
             print(f"Error: {e}")
 
 unix = Unix()
-Unix_terminal()
+# Unix_terminal()
 # unix.mkdir('//Documents')
 # unix.mkdir('//Documents/photos')
 # unix.mkdir('//Downloads')
@@ -470,3 +472,14 @@ Unix_terminal()
 # unix.cd('//Downloads/movies')
 # z= unix.reverse_forward_walk('first/movies/Downloads///Documents/photos')
 # print(z.name)
+unix.mkdir('//parsa')
+print(unix.ls())
+unix.cd('//parsa')
+unix.touch('test.txt')
+print(unix.ls())
+unix.nwfiletxt('test.txt','Hello world')
+unix.append('test.txt',', hi again')
+print(unix.cat('test.txt'))
+unix.cd('..')
+print('-------------------------------')
+print(unix.ls())
